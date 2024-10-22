@@ -18,4 +18,15 @@ private:
     }
 };
 
-class ChainingHashMap: public HashMap{}
+class ChainingHashMap: public HashMap{
+private:
+    vector<Node*> table;
+
+public:
+    ChainingHahMap(int s=997): HashMap(s){
+        table.resize(size,nullptr);
+    }
+    ~ChainingHashMap(){
+        clear();
+    }
+}
