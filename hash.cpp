@@ -15,4 +15,4 @@ private:
         hashVal = 37*hashVal + c;
       }
       return abs(hashVal) % size;
-}
+};
