@@ -18,6 +18,17 @@ protected:
     }
 };
 
+class Node {
+    WordFreq data;      //the wordFreq class in defiened in main
+    Node* next;
+    
+    Node(WordFreq d){
+        data = d;
+        next = nullptr;
+    }
+};
+
+
 class ChainingHashMap: public HashMap{
 private:
     vector<Node*> table;
