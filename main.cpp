@@ -67,18 +67,13 @@ public:
             return;
         }
         Node* current = table[index];
-        while(current->next) {
-            if(current->data.word == data.word) {
+        while(current->next != NULL) {
+            if(((current->data).word) == data.word) {
                 current->data = data;
                 delete newNode;
                 return;
             }
             current = current->next;
-        }
-        if(current->data.word == data.word) {
-            current->data = data;
-            delete newNode;
-            return;
         }
         
         current->next = newNode;
