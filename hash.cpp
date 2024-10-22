@@ -16,6 +16,11 @@ protected:
       }
       return abs(hashVal) % size;
     }
+
+public:
+    HashMap(int sz = 997){
+        this->size = sz;
+        this->count = 0;
 };
 
 struct Node {
@@ -34,7 +39,8 @@ private:
     vector<Node*> table;
 
 public:
-    ChainingHashMap(int s=997): HashMap(s){
+    ChainingHashMap(int s=997){
+        HashMap(s);
         table.resize(size,nullptr);
     }
     ~ChainingHashMap(){
@@ -75,7 +81,8 @@ private:
     vector<pair<bool, WordFreq>> table;  // bool indicates if slot is occupied
     
 public:
-    OpenAddressingHashMap(int s = 997) : HashMap(s) {
+    OpenAddressingHashMap(int s = 997){
+        HashMap(s);
         table.resize(size, {false, WordFreq()});
     }
     
@@ -97,7 +104,7 @@ public:
             }
             i++;
         }
-        // Table is full
+        
         cout << "Hash table is full!" << endl;
     }
     
