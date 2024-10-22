@@ -23,10 +23,66 @@ private:
     vector<Node*> table;
 
 public:
-    ChainingHahMap(int s=997): HashMap(s){
+    ChainingHashMap(int s=997): HashMap(s){
         table.resize(size,nullptr);
     }
     ~ChainingHashMap(){
         clear();
     }
 }
+
+class OpenAddressingHashMap : public HashMap {
+private:
+    vector<pair<bool, WordFreq>> table;  // bool indicates if slot is occupied
+    
+public:
+    OpenAddressingHashMap(int s = 997) : HashMap(s) {
+        table.resize(size, {false, WordFreq()});
+    }
+    
+    void insert(WordFreq data) override {
+        int index = hash(data.word);
+        int i = 0;
+        
+        while(i < size) {
+            int currentIndex = (index + i) % size;
+            
+            if(!table[currentIndex].first) {
+                table[currentIndex] = {true, data};
+                count++;
+                return;
+            }
+            else if(table[currentIndex].second.word == data.word) {
+                table[currentIndex].second = data;
+                return;
+            }
+            i++;
+        }
+        // Table is full
+        cout << "Hash table is full!" << endl;
+    }
+    
+    WordFreq* search(string key) override {
+        int index = hash(key);
+        int i = 0;
+        
+        while(i < size) {
+            int currentIndex = (index + i) % size;
+            
+            if(!table[currentIndex].first) {
+                return nullptr;
+            }
+            if(table[currentIndex].second.word == key) {
+                return &(table[currentIndex].second);
+            }
+            i++;
+        }
+        return nullptr;
+    }
+    
+    void clear() override {
+        table.clear();
+        table.resize(size, {false, WordFreq()});
+        count = 0;
+    }
+};
