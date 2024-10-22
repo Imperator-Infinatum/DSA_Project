@@ -40,6 +40,7 @@ public:
     HashMap(int sz = 997){
         this->size = sz;
         this->count = 0;
+    }
 };
 
 
@@ -137,3 +138,5 @@ public:
         count = 0;
     }
 };
+
+
