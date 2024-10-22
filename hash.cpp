@@ -65,11 +65,7 @@ public:
             }
             current = current->next;
         }
-        if(current->data.word == data.word) {
-            current->data = data;
-            delete newNode;
-            return;
-        }
+        
         
         current->next = newNode;
         count++;
