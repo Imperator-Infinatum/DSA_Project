@@ -5,7 +5,7 @@ using namespace std;
 #also update the logic used in the readME file.
 
 class HashMap{
-private:
+protected:
     int count;
     int size;
 
