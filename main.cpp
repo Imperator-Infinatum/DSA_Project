@@ -139,4 +139,62 @@ public:
     }
 };
 
+class EmailClassifier
+{
+private:
+    HashMap *wordMap;
+    double threshold;
 
+public:
+    EmailClassifier(HashMap *map, double thresh = 0.7)
+        : wordMap(map), threshold(thresh) {}
+
+    void train(vector<pair<string, vector<string>>> &trainingData, bool isSpam)
+    {
+        for (const auto &email : trainingData)
+        {
+            for (const string &word : email.second)
+            {
+                WordFreq *wf = wordMap->search(word);
+                if (!wf)
+                {
+                    WordFreq newWF(word);
+                    if (isSpam)
+                        newWF.spamFreq = 1.0;
+                    else
+                        newWF.hamFreq = 1.0;
+                    wordMap->insert(newWF);
+                }
+                else
+                {
+                    if (isSpam)
+                        wf->spamFreq += 1.0;
+                    else
+                        wf->hamFreq += 1.0;
+                }
+            }
+        }
+    }
+
+    bool classify(const vector<string> &emailWords)
+    {
+        double spamScore = 0.0;
+        double totalWords = 0.0;
+
+        for (const string &word : emailWords)
+        {
+            WordFreq *wf = wordMap->search(word);
+            if (wf)
+            {
+                double totalFreq = wf->spamFreq + wf->hamFreq;
+                if (totalFreq > 0)
+                {
+                    spamScore += (wf->spamFreq / totalFreq);
+                    totalWords += 1.0;
+                }
+            }
+        }
+
+        return (totalWords > 0 && (spamScore / totalWords) >= threshold);
+    }
+};
