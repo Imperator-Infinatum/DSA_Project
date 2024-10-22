@@ -29,4 +29,32 @@ public:
     ~ChainingHashMap(){
         clear();
     }
+
+    void insert(WordFreq data) override{
+        int index=hash(data.word);
+        Node* newNode=new Node(data);
+
+        if(!table[index]){
+            table[index]=newNode;
+            count++;
+            return;
+        }
+        Node* current = table[index];
+        while(current->next) {
+            if(current->data.word == data.word) {
+                current->data = data;
+                delete newNode;
+                return;
+            }
+            current = current->next;
+        }
+        if(current->data.word == data.word) {
+            current->data = data;
+            delete newNode;
+            return;
+        }
+        
+        current->next = newNode;
+        count++;
+    }
 }
