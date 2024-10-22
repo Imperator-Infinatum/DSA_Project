@@ -12,4 +12,5 @@ struct WordFreq {
         this->hamFreq = h; 
     }
 
+
 };
