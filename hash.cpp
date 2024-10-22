@@ -18,7 +18,7 @@ protected:
     }
 };
 
-class Node {
+struct Node {
     WordFreq data;      //the wordFreq class in defiened in main
     Node* next;
     
