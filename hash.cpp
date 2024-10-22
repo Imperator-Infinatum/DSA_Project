@@ -17,3 +17,5 @@ private:
       return abs(hashVal) % size;
     }
 };
+
+class ChainingHashMap: public HashMap{}
