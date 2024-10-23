@@ -29,10 +29,10 @@ protected:
     int size;
 
     int hash(string s){
-      int hashVal = 0;
-      for(char c : s){
+    int hashVal = 0;
+    for(char c : s){
         hashVal = 37*hashVal + c;
-      }
+    }
       return abs(hashVal) % size;
     }
 
@@ -80,11 +80,11 @@ public:
         current->next = newNode;
         count++;
     }
-}
+};
 
 class OpenAddressingHashMap : public HashMap {
 private:
-    vector<pair<bool, WordFreq>> table;  // bool indicates if slot is occupied
+    vector<pair<bool, WordFreq>> table;  
     
 public:
     OpenAddressingHashMap(int s = 997){
@@ -146,8 +146,10 @@ private:
     double threshold;
 
 public:
-    EmailClassifier(HashMap *map, double thresh = 0.7)
-        : wordMap(map), threshold(thresh) {}
+    EmailClassifier(HashMap *map, double thresh = 0.7){
+        this->wordMap = map;
+        this->threshold = thresh;
+    }
 
     void train(vector<pair<string, vector<string>>> &trainingData, bool isSpam)
     {
@@ -193,8 +195,6 @@ public:
                     totalWords += 1.0;
                 }
             }
-        }
-
         return (totalWords > 0 && (spamScore / totalWords) >= threshold);
     }
 };
