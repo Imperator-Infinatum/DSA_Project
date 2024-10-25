@@ -31,13 +31,13 @@ protected:
     int hash(string s){
     int hashVal = 0;
     for(char c : s){
-        hashVal = 37*hashVal + c;
+        hashVal = 37*hashVal + c;       //Why 37? Answered in ReadME file
     }
       return abs(hashVal) % size;
     }
 
 public:
-    HashMap(int sz = 997){
+    HashMap(int sz = 997){        //Initially, since we do not have the maximum count of target words(words except is, this, the, in, or ....), we choose a random number.
         this->size = sz;
         this->count = 0;
     }
