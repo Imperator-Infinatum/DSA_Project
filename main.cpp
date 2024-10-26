@@ -25,8 +25,8 @@ struct Node {
 
 class HashMap{
 protected:
-    int count;
-    int size;
+    int count;                     //count measures the number of buckets used.
+    int size;                      //total number of buckets in table
 
     int hash(string s){
     int hashVal = 0;
@@ -198,3 +198,4 @@ public:
         return (totalWords > 0 && (spamScore / totalWords) >= threshold);
     }
 };
+
