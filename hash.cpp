@@ -70,6 +70,31 @@ public:
         current->next = newNode;
         count++;
     }
+
+    WordFreq* search(const std::string& key) override {
+        int index = hash(key);
+        Node* current = table[index];
+        while(current != nullptr){
+            if(current->data.word == key){
+                return &(current->data);
+            }
+            current = current->next;
+        }
+        return nullptr;
+    }
+
+    void clear() override {
+        for(auto &head : table){
+            while(head != nullptr){
+                Node* temp = head;
+                head = head->next;
+                delete temp;
+            }
+        }
+        table.assign(size, nullptr);
+        count = 0;
+    }
+
 }
 
 class OpenAddressingHashMap : public HashMap {
