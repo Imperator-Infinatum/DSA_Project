@@ -215,3 +215,54 @@ vector<string> splitCSVLine(const string& line) {
     }
     return tokens;
 }
+
+void loadWordFrequenciesFromTransposedCSV(const string& filename, HashMap* wordMap) {
+    ifstream file(filename);
+    if (!file.is_open()) {
+        cerr << "Error opening file: " << filename << endl;
+        return;
+    }
+
+    // Read all three rows
+    string wordsLine, spamLine, hamLine;
+    getline(file, wordsLine);
+    getline(file, spamLine);
+    getline(file, hamLine);
+
+    // Split each line into tokens
+    vector<string> words = splitCSVLine(wordsLine);
+    vector<string> spamCounts = splitCSVLine(spamLine);
+    vector<string> hamCounts = splitCSVLine(hamLine);
+
+    // Verify all rows have the same number of columns
+    if (words.size() != spamCounts.size() || words.size() != hamCounts.size()) {
+        cerr << "Error: Inconsistent number of columns in CSV file" << endl;
+        cerr << "Words: " << words.size() << ", Spam counts: " << spamCounts.size() << ", Ham counts: " << hamCounts.size() << endl;
+        return;
+    }
+
+    // Process each column (word)
+    for (size_t i = 0; i < words.size(); ++i) {
+        try {
+            // Skip empty words or header columns
+            if (words[i].empty() || words[i] == "Word" || words[i] == "word") {
+                continue;
+            }
+
+            // Convert counts to doubles
+            double spamFreq = stod(spamCounts[i]);
+            double hamFreq = stod(hamCounts[i]);
+
+            // Create and insert WordFreq object
+            WordFreq wordFreq(words[i], spamFreq, hamFreq);
+            wordMap->insert(wordFreq);
+
+        } catch (const exception& e) {
+            cerr << "Error processing column " << i + 1 << ": " << words[i] << endl;
+            cerr << "Error message: " << e.what() << endl;
+            continue;
+        }
+    }
+
+    file.close();
+}
