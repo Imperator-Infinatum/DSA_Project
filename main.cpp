@@ -266,3 +266,30 @@ void loadWordFrequenciesFromTransposedCSV(const string& filename, HashMap* wordM
 
     file.close();
 }
+
+pair<string, vector<string>> loadTestEmailFromCSV(const string& filename) {
+    ifstream file(filename);
+    if (!file.is_open()) {
+        cerr << "Error opening file: " << filename << endl;
+        return {"", {}};
+    }
+
+    string line;
+    if (getline(file, line)) {
+        vector<string> tokens = splitCSVLine(line);
+
+        if (tokens.empty()) {
+            cerr << "Error: Empty line in test email CSV file" << endl;
+            return {"", {}};
+        }
+
+        // The first token represents whether the email is spam or ham
+        string label = tokens[0];
+        vector<string> emailWords(tokens.begin() + 1, tokens.end());
+
+        return {label, emailWords};
+    }
+
+    cerr << "Error: No data in test email CSV file" << endl;
+    return {"", {}};
+}
