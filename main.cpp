@@ -199,3 +199,19 @@ public:
     }
 };
 
+vector<string> splitCSVLine(const string& line) {
+    vector<string> tokens;
+    stringstream ss(line);
+    string token;
+    
+    while (getline(ss, token, ',')) {
+        // Remove any quotation marks if present
+        if (!token.empty() && token.front() == '"' && token.back() == '"') {
+            token = token.substr(1, token.length() - 2);
+        }
+        // Remove any whitespace
+        //token.erase(remove_if(token.begin(), token.end(), ::isspace), token.end());
+        tokens.push_back(token);
+    }
+    return tokens;
+}
