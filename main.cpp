@@ -80,6 +80,33 @@ public:
         current->next = newNode;
         count++;
     }
+
+    WordFreq* search(string key) override {
+        int index = hash(key);
+        Node* current = table[index];
+        
+        while(current) {
+            if(current->data.word == key) {
+                return &(current->data);
+            }
+            current = current->next;
+        }
+        return nullptr;
+    }
+    
+    void clear() override {
+        for(Node* head : table) {
+            while(head) {
+                Node* temp = head;
+                head = head->next;
+                delete temp;
+            }
+        }
+        table.clear();
+        count = 0;
+    }
+
+
 };
 
 class OpenAddressingHashMap : public HashMap {
