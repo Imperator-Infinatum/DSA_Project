@@ -1,0 +1,416 @@
+#include <iostream>
+#include <string>
+#include <vector>
+#include <fstream>
+#include <sstream>
+#include <gtk/gtk.h>
+#include <algorithm>
+
+using namespace std;
+
+struct WordFreq {
+    string word;
+    double spamFreq;
+    double hamFreq;
+
+    WordFreq(string w = "", double s = 0.0, double h = 0.0)
+        : word(w), spamFreq(s), hamFreq(h) {}
+};
+
+struct Node {
+    WordFreq data;
+    Node* next;
+
+    Node(WordFreq d) : data(d), next(nullptr) {}
+};
+
+class HashMap {
+protected:
+    int size;
+    int count;
+
+    int hash(string key) {
+        int hashVal = 0;
+        for (char c : key) {
+            hashVal = 37 * hashVal + c;
+        }
+        return abs(hashVal) % size;
+    }
+
+public:
+    HashMap(int s = 997) : size(s), count(0) {}
+    virtual ~HashMap() {}
+
+    virtual void insert(WordFreq data) = 0;
+    virtual WordFreq* search(string key) = 0;
+    virtual void clear() = 0;
+
+    double getLoadFactor() { return (double)count / size; }
+    int getCount() { return count; }
+};
+
+// Chaining implementation
+class ChainingHashMap : public HashMap {
+private:
+    vector<Node*> table;
+
+public:
+    ChainingHashMap(int s = 997) : HashMap(s) {
+        table.resize(size, nullptr);
+    }
+
+    ~ChainingHashMap() {
+        clear();
+    }
+
+    void insert(WordFreq data) override {
+        int index = hash(data.word);
+        Node* newNode = new Node(data);
+
+        if (!table[index]) {
+            table[index] = newNode;
+            count++;
+            return;
+        }
+
+        Node* current = table[index];
+        while (current->next) {
+            if (current->data.word == data.word) {
+                current->data = data;
+                delete newNode;
+                return;
+            }
+            current = current->next;
+        }
+
+        if (current->data.word == data.word) {
+            current->data = data;
+            delete newNode;
+            return;
+        }
+
+        current->next = newNode;
+        count++;
+    }
+
+    WordFreq* search(string key) override {
+        int index = hash(key);
+        Node* current = table[index];
+
+        while (current) {
+            if (current->data.word == key) {
+                return &(current->data);
+            }
+            current = current->next;
+        }
+        return nullptr;
+    }
+
+    void clear() override {
+        for (Node* head : table) {
+            while (head) {
+                Node* temp = head;
+                head = head->next;
+                delete temp;
+            }
+        }
+        table.clear();
+        count = 0;
+    }
+};
+
+// OpenAddressing implementation
+class OpenAddressingHashMap : public HashMap {
+private:
+    vector<pair<bool, WordFreq>> table;
+
+public:
+    OpenAddressingHashMap(int s = 997) : HashMap(s) {
+        table.resize(size, {false, WordFreq()});
+    }
+
+    void insert(WordFreq data) override {
+        int index = hash(data.word);
+        int i = 0;
+
+        while (i < size) {
+            int currentIndex = (index + i) % size;
+
+            if (!table[currentIndex].first) {
+                table[currentIndex] = {true, data};
+                count++;
+                return;
+            }
+            else if (table[currentIndex].second.word == data.word) {
+                table[currentIndex].second = data;
+                return;
+            }
+            i++;
+        }
+        cout << "Hash table is full!" << endl;
+    }
+
+    WordFreq* search(string key) override {
+        int index = hash(key);
+        int i = 0;
+
+        while (i < size) {
+            int currentIndex = (index + i) % size;
+
+            if (!table[currentIndex].first) {
+                return nullptr;
+            }
+            if (table[currentIndex].second.word == key) {
+                return &(table[currentIndex].second);
+            }
+            i++;
+        }
+        return nullptr;
+    }
+
+    void clear() override {
+        table.clear();
+        table.resize(size, {false, WordFreq()});
+        count = 0;
+    }
+};
+
+// Email Classifier class
+class EmailClassifier {
+private:
+    HashMap* wordMap;
+    double threshold;
+
+public:
+    EmailClassifier(HashMap* map, double thresh = 0.7)
+        : wordMap(map), threshold(thresh) {}
+
+    bool classify(const vector<string>& emailWords) {
+        double spamScore = 0.0;
+        double totalWords = 0.0;
+
+        for (const string& word : emailWords) {
+            WordFreq* wf = wordMap->search(word);
+            if (wf) {
+                double totalFreq = wf->spamFreq + wf->hamFreq;
+                if (totalFreq > 0) {
+                    spamScore += (wf->spamFreq / totalFreq);
+                    totalWords += 1.0;
+                }
+            }
+        }
+
+        return (totalWords > 0 && (spamScore / totalWords) >= threshold);
+    }
+};
+
+vector<string> splitCSVLine(const string& line) {
+    vector<string> tokens;
+    stringstream ss(line);
+    string token;
+
+    while (getline(ss, token, ',')) {
+        if (!token.empty() && token.front() == '"' && token.back() == '"') {
+            token = token.substr(1, token.length() - 2);
+        }
+        tokens.push_back(token);
+    }
+    return tokens;
+}
+
+void loadWordFrequenciesFromTransposedCSV(const string& filename, HashMap* wordMap) {
+    ifstream file(filename);
+    if (!file.is_open()) {
+        cerr << "Error opening file: " << filename << endl;
+        return;
+    }
+
+    string wordsLine, spamLine, hamLine;
+    getline(file, wordsLine);
+    getline(file, spamLine);
+    getline(file, hamLine);
+
+    vector<string> words = splitCSVLine(wordsLine);
+    vector<string> spamCounts = splitCSVLine(spamLine);
+    vector<string> hamCounts = splitCSVLine(hamLine);
+
+    // Determine the expected number of columns
+    size_t expectedSize = words.size();
+
+    // Check for consistency in the number of columns
+    if (spamCounts.size() != expectedSize || hamCounts.size() != expectedSize) {
+        cerr << "Error: Inconsistent number of columns in CSV file" << endl;
+        return;
+    }
+
+    for (size_t i = 0; i < words.size(); ++i) {
+        if (words[i].empty() || words[i] == "Word" || words[i] == "word") {
+            continue;
+        }
+
+        try {
+            double spamFreq = stod(spamCounts[i]);
+            double hamFreq = stod(hamCounts[i]);
+
+            WordFreq wordFreq(words[i], spamFreq, hamFreq);
+            wordMap->insert(wordFreq);
+        } catch (const exception& e) {
+            cerr << "Error processing column " << i + 1 << ": " << words[i] << endl;
+            continue;
+        }
+    }
+
+    file.close();
+}
+
+// Save entered words to a CSV file (vertical format)
+// Save entered words to a CSV file (horizontal format)
+void saveWordsToCSV(const vector<string>& emailWords, const string& filename) {
+    fstream file(filename, ios::in | ios::out | ios::app); // Open in append mode with read and write access
+
+    if (!file.is_open()) {
+        cerr << "Error opening file for saving words: " << filename << endl;
+        return;
+    }
+
+    // Move to the end of the file to continue on the last line if it exists
+    file.seekp(0, ios::end);
+    if (file.tellp() > 0) {
+        file.seekp(-1, ios::cur);  // Move one position back to check last character
+        char lastChar;
+        file.get(lastChar);
+
+        // Add a comma if the file does not end in a newline
+        if (lastChar != '\n') {
+            file << ",";
+        }
+    }
+
+    // Write each word in horizontal format
+    for (size_t i = 0; i < emailWords.size(); ++i) {
+        file << "\"" << emailWords[i] << "\""; // Add quotes around each word
+
+        // Add a comma if it’s not the last word
+        if (i != emailWords.size() - 1) {
+            file << ",";
+        }
+    }
+
+    file << endl; // End the line after writing all words
+    file.close();
+}
+
+
+// GTK Function to run classification with text entry
+// GTK Function to run classification with text entry
+void show_result_window(const char* chainingResult, const char* openResult) {
+    // Create a new window to display the results
+    GtkWidget* resultWindow = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    gtk_window_set_title(GTK_WINDOW(resultWindow), "Classification Result");
+
+    // Set result window size
+    gtk_window_set_default_size(GTK_WINDOW(resultWindow), 500, 300); // Increase result window size
+
+    // Create a vertical box to hold the results
+    GtkWidget* resultBox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
+
+    // Create labels for the results
+    GtkWidget* chainingLabel = gtk_label_new(chainingResult);
+    GtkWidget* openLabel = gtk_label_new(openResult);
+
+    // Pack the labels into the result box
+    gtk_box_pack_start(GTK_BOX(resultBox), chainingLabel, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(resultBox), openLabel, FALSE, FALSE, 0);
+
+    // Add the result box to the result window
+    gtk_container_add(GTK_CONTAINER(resultWindow), resultBox);
+
+    // Show the window and all its components
+    gtk_widget_show_all(resultWindow);
+}
+
+// Updated GTK function to run classification with text entry
+void on_classify_button_clicked(GtkButton *button, gpointer user_data) {
+    GtkWidget* emailTextView = GTK_WIDGET(user_data);  // Retrieve the email text view widget
+
+    // Retrieve the text buffer from the GtkTextView widget
+    GtkTextBuffer* textBuffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(emailTextView));
+
+    // Create a GtkTextIter to hold the starting position of the buffer
+    GtkTextIter startIter, endIter;
+
+    // Get the starting iterator of the text buffer
+    gtk_text_buffer_get_start_iter(textBuffer, &startIter);
+    // Get the ending iterator of the text buffer (marks the end of the text)
+    gtk_text_buffer_get_end_iter(textBuffer, &endIter);
+
+    // Get the full text from the buffer
+    gchar* emailText = gtk_text_buffer_get_text(textBuffer, &startIter, &endIter, FALSE);
+
+    // Create hash maps
+    ChainingHashMap chainMap(2000);
+    OpenAddressingHashMap openMap(2000);
+
+    // Load word frequencies from CSV file into both hash maps
+    loadWordFrequenciesFromTransposedCSV("C:\\Users\\Komal yadav\\major_dsa\\test.csv", &chainMap);
+    loadWordFrequenciesFromTransposedCSV("C:\\Users\\Komal yadav\\major_dsa\\test.csv", &openMap);
+
+    EmailClassifier chainClassifier(&chainMap, 0);
+    EmailClassifier openClassifier(&openMap, 0);
+
+    vector<string> emailWords;
+
+    // Process entered email text
+    stringstream ss(emailText);
+    string word;
+    while (ss >> word) {
+        emailWords.push_back(word);
+    }
+
+    // Save words to CSV file for future analysis
+    saveWordsToCSV(emailWords, "C:\\Users\\Komal yadav\\major_dsa\\test.csv");
+
+    // Classify email
+    bool isSpamChain = chainClassifier.classify(emailWords);
+    bool isSpamOpen = openClassifier.classify(emailWords);
+
+    // Prepare result strings
+    const char* chainingResult = isSpamChain ? "Chaining: Spam" : "Chaining: Not Spam";
+    const char* openResult = isSpamOpen ? "Open Addressing: Spam" : "Open Addressing: Not Spam";
+
+    // Show result window
+    show_result_window(chainingResult, openResult);
+
+    g_free(emailText);  // Free the memory allocated for the email text
+}
+
+int main(int argc, char *argv[]) {
+    gtk_init(&argc, &argv); // Initialize GTK+
+
+    // Create main window and UI elements
+    GtkWidget* window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    gtk_window_set_title(GTK_WINDOW(window), "Email Classification");
+
+    // Set the main window size
+    gtk_window_set_default_size(GTK_WINDOW(window), 800, 600); // Increase main window size
+
+    GtkWidget* classifyButton = gtk_button_new_with_label("Classify");
+    GtkWidget* emailTextView = gtk_text_view_new();
+
+    // Set size for the input text view (email text box)
+    gtk_widget_set_size_request(emailTextView, 600, 400); // Increase the input text view size
+
+    g_signal_connect(classifyButton, "clicked", G_CALLBACK(on_classify_button_clicked), emailTextView);
+
+    // Layout: pack button and text view in a vertical box
+    GtkWidget* box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
+    gtk_box_pack_start(GTK_BOX(box), emailTextView, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(box), classifyButton, FALSE, FALSE, 0);
+
+    gtk_container_add(GTK_CONTAINER(window), box);
+    gtk_widget_show_all(window);
+
+    gtk_main();
+
+    return 0;
+}
