@@ -4,8 +4,11 @@ Email Spam Classifier
 This project is an Email Spam Classifier that uses a HashMap data structure to categorize emails as spam or not spam based on word frequencies from a CSV file. It supports two hashing techniques: Chaining and Open Addressing.
 
 Table of Contents
+
 Project Overview
+
 How to Use?
+
 Technical Details
 
 
